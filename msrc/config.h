@@ -86,7 +86,7 @@
 //#define DEBUG_GPS
 //#define DEBUG_PWM
 //#define DEBUG_CASTLE
-//#define DEBUG_CASTLE_RX
+#define DEBUG_CASTLE_RX
 
 //#define SIM_RX
 //#define SIM_SENSORS
