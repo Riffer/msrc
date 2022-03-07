@@ -412,6 +412,7 @@ void EscCastle::FTM0_IRQ_handler()
         FTM0_C2SC |= FTM_CSC_CHF;     // CLEAR FLAG CH2
         FTM0_C2SC |= FTM_CSC_CHIE;    // ENABLE INTERRUPT CH2
         FTM0_C0SC |= FTM_CSC_CHF;     // CLEAR FLAG CH0
+        FTM0_C0V = castlePwmRx;
         if (!castleTelemetryReceived)
         {
             castleCont = 0;
@@ -428,7 +429,7 @@ void EscCastle::FTM0_IRQ_handler()
     if (FTM0_C4SC & FTM_CSC_CHF) // CH4 INTERRUPT (CAPTURE TELEMETRY)
     {
         castleTelemetry[castleCont] = FTM0_C4V - castlePwmRx;
-        FTM0_C0V = castlePwmRx;
+        
 #ifdef DEBUG_CASTLE
         DEBUG_PRINT(castleTelemetry[castleCont]);
         DEBUG_PRINT(" ");
