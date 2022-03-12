@@ -1,4 +1,4 @@
-#include "crfs.h"
+#include "crsf.h"
 
 Crfs::Crfs(AbstractSerial &serial) : serial_(serial)
 {
@@ -11,7 +11,7 @@ Crfs::~Crfs()
 void Crfs::begin()
 {
     serial_.begin(420000, SERIAL__8N1 | SERIAL__HALF_DUP);
-    serial_.setTimeout(CRFS_TIMEOUT);
+    serial_.setTimeout(CRSF_TIMEOUT);
     pinMode(LED_BUILTIN, OUTPUT);
     Config config = {CONFIG_AIRSPEED, CONFIG_GPS, CONFIG_VOLTAGE1, CONFIG_VOLTAGE2, CONFIG_CURRENT, CONFIG_NTC1, CONFIG_NTC2, CONFIG_PWMOUT, {CONFIG_REFRESH_RPM, CONFIG_REFRESH_VOLT, CONFIG_REFRESH_CURR, CONFIG_REFRESH_TEMP}, {CONFIG_AVERAGING_ELEMENTS_RPM, CONFIG_AVERAGING_ELEMENTS_VOLT, CONFIG_AVERAGING_ELEMENTS_CURR, CONFIG_AVERAGING_ELEMENTS_TEMP}, CONFIG_ESC_PROTOCOL, CONFIG_I2C1_TYPE, CONFIG_I2C1_ADDRESS, 0, 0, SENSOR_ID};
     setConfig(config);
@@ -38,7 +38,7 @@ void Crfs::sendPacket(uint8_t packetId)
 
 void Crfs::update()
 {
-    uint8_t status = CRFS_WAIT;
+    uint8_t status = CRSF_WAIT;
     static bool mute = true;
 #if defined(SIM_RX)
     static uint16_t ts = 0;
@@ -47,7 +47,7 @@ void Crfs::update()
     {
         if (!mute)
         {
-            status = CRFS_SEND;
+            status = CRSF_SEND;
             packetId++;
         }
         mute = !mute;
@@ -71,17 +71,17 @@ void Crfs::update()
         }
         DEBUG_PRINTLN();
 #endif
-        uint8_t packet[CRFS_PACKET_LENGHT];
-        if (length == CRFS_PACKET_LENGHT)
+        uint8_t packet[CRSF_PACKET_LENGHT];
+        if (length == CRSF_PACKET_LENGHT)
         {
             if (!mute)
             {
-                status = CRFS_SEND;
+                status = CRSF_SEND;
             }
             mute = !mute;
         }
 #endif
-    if (status == CRFS_SEND)
+    if (status == CRSF_SEND)
     {
         if (serial_.timestamp() < 1500)
             sendPacket(packetId);
@@ -116,31 +116,31 @@ void Crfs::setConfig(Config &config)
         esc->begin();
         PwmOut pwmOut;
         pwmOut.setRpmP(esc->rpmP());
-        sensorCrfsP = new SensorCrfs(CRFS_TYPE_INT22, 0, esc->rpmP(), esc);
+        sensorCrfsP = new SensorCrfs(CRSF_TYPE_INT22, 0, esc->rpmP(), esc);
         sensorCrfsP->setSensorId(addSensor(sensorCrfsP));
         sensorCrfsP->setText("RPM");
         sensorCrfsP->setUnit("RPM");
-        sensorCrfsP = new SensorCrfs(CRFS_TYPE_INT14, 1, esc->currentP(), esc);
+        sensorCrfsP = new SensorCrfs(CRSF_TYPE_INT14, 1, esc->currentP(), esc);
         sensorCrfsP->setSensorId(addSensor(sensorCrfsP));
         sensorCrfsP->setText("Current");
         sensorCrfsP->setUnit("A");
-        sensorCrfsP = new SensorCrfs(CRFS_TYPE_INT14, 2, esc->voltageP(), esc);
+        sensorCrfsP = new SensorCrfs(CRSF_TYPE_INT14, 2, esc->voltageP(), esc);
         sensorCrfsP->setSensorId(addSensor(sensorCrfsP));
         sensorCrfsP->setText("Voltage");
         sensorCrfsP->setUnit("V");
-        sensorCrfsP = new SensorCrfs(CRFS_TYPE_INT14, 0, esc->tempFetP(), esc);
+        sensorCrfsP = new SensorCrfs(CRSF_TYPE_INT14, 0, esc->tempFetP(), esc);
         sensorCrfsP->setSensorId(addSensor(sensorCrfsP));
         sensorCrfsP->setText("Temp FET");
         sensorCrfsP->setUnit("C");
-        sensorCrfsP = new SensorCrfs(CRFS_TYPE_INT14, 0, esc->tempBecP(), esc);
+        sensorCrfsP = new SensorCrfs(CRSF_TYPE_INT14, 0, esc->tempBecP(), esc);
         sensorCrfsP->setSensorId(addSensor(sensorCrfsP));
         sensorCrfsP->setText("Temp BEC");
         sensorCrfsP->setUnit("C");
-        sensorCrfsP = new SensorCrfs(CRFS_TYPE_INT14, 2, esc->cellVoltageP(), esc);
+        sensorCrfsP = new SensorCrfs(CRSF_TYPE_INT14, 2, esc->cellVoltageP(), esc);
         sensorCrfsP->setSensorId(addSensor(sensorCrfsP));
         sensorCrfsP->setText("Cell Voltage");
         sensorCrfsP->setUnit("V");
-        sensorCrfsP = new SensorCrfs(CRFS_TYPE_INT14, 0, esc->consumptionP(), esc);
+        sensorCrfsP = new SensorCrfs(CRSF_TYPE_INT14, 0, esc->consumptionP(), esc);
         sensorCrfsP->setSensorId(addSensor(sensorCrfsP));
         sensorCrfsP->setText("Consumption");
         sensorCrfsP->setUnit("mAh");
@@ -151,39 +151,39 @@ void Crfs::setConfig(Config &config)
         EscCastle *esc;
         esc = new EscCastle(ALPHA(config.average.rpm), ALPHA(config.average.volt), ALPHA(config.average.curr), ALPHA(config.average.temp));
         esc->begin();
-        sensorCrfsP = new SensorCrfs(CRFS_TYPE_INT22, 0, esc->rpmP(), esc);
+        sensorCrfsP = new SensorCrfs(CRSF_TYPE_INT22, 0, esc->rpmP(), esc);
         sensorCrfsP->setSensorId(addSensor(sensorCrfsP));
         sensorCrfsP->setText("RPM");
         sensorCrfsP->setUnit("RPM");
-        sensorCrfsP = new SensorCrfs(CRFS_TYPE_INT14, 1, esc->currentP(), esc);
+        sensorCrfsP = new SensorCrfs(CRSF_TYPE_INT14, 1, esc->currentP(), esc);
         sensorCrfsP->setSensorId(addSensor(sensorCrfsP));
         sensorCrfsP->setText("Current");
         sensorCrfsP->setUnit("A");
-        sensorCrfsP = new SensorCrfs(CRFS_TYPE_INT14, 2, esc->voltageP(), esc);
+        sensorCrfsP = new SensorCrfs(CRSF_TYPE_INT14, 2, esc->voltageP(), esc);
         sensorCrfsP->setSensorId(addSensor(sensorCrfsP));
         sensorCrfsP->setText("Voltage");
         sensorCrfsP->setUnit("V");
-        sensorCrfsP = new SensorCrfs(CRFS_TYPE_INT14, 2, esc->rippleVoltageP(), esc);
+        sensorCrfsP = new SensorCrfs(CRSF_TYPE_INT14, 2, esc->rippleVoltageP(), esc);
         sensorCrfsP->setSensorId(addSensor(sensorCrfsP));
         sensorCrfsP->setText("Ripple Voltage");
         sensorCrfsP->setUnit("V");
-        sensorCrfsP = new SensorCrfs(CRFS_TYPE_INT14, 2, esc->becCurrentP(), esc);
+        sensorCrfsP = new SensorCrfs(CRSF_TYPE_INT14, 2, esc->becCurrentP(), esc);
         sensorCrfsP->setSensorId(addSensor(sensorCrfsP));
         sensorCrfsP->setText("BEC Current");
         sensorCrfsP->setUnit("A");
-        sensorCrfsP = new SensorCrfs(CRFS_TYPE_INT14, 2, esc->becVoltageP(), esc);
+        sensorCrfsP = new SensorCrfs(CRSF_TYPE_INT14, 2, esc->becVoltageP(), esc);
         sensorCrfsP->setSensorId(addSensor(sensorCrfsP));
         sensorCrfsP->setText("BEC Voltage");
         sensorCrfsP->setUnit("V");
-        sensorCrfsP = new SensorCrfs(CRFS_TYPE_INT14, 0, esc->temperatureP(), esc);
+        sensorCrfsP = new SensorCrfs(CRSF_TYPE_INT14, 0, esc->temperatureP(), esc);
         sensorCrfsP->setSensorId(addSensor(sensorCrfsP));
         sensorCrfsP->setText("Temperature");
         sensorCrfsP->setUnit("C");
-        sensorCrfsP = new SensorCrfs(CRFS_TYPE_INT14, 2, esc->cellVoltageP(), esc);
+        sensorCrfsP = new SensorCrfs(CRSF_TYPE_INT14, 2, esc->cellVoltageP(), esc);
         sensorCrfsP->setSensorId(addSensor(sensorCrfsP));
         sensorCrfsP->setText("Cell Voltage");
         sensorCrfsP->setUnit("V");
-        sensorCrfsP = new SensorCrfs(CRFS_TYPE_INT14, 0, esc->consumptionP(), esc);
+        sensorCrfsP = new SensorCrfs(CRSF_TYPE_INT14, 0, esc->consumptionP(), esc);
         sensorCrfsP->setSensorId(addSensor(sensorCrfsP));
         sensorCrfsP->setText("Consumption");
         sensorCrfsP->setUnit("mAh");
@@ -194,39 +194,39 @@ void Crfs::setConfig(Config &config)
         EscKontronik *esc;
         esc = new EscKontronik(ESC_SERIAL, ALPHA(config.average.rpm), ALPHA(config.average.volt), ALPHA(config.average.curr), ALPHA(config.average.temp));
         esc->begin();
-        sensorCrfsP = new SensorCrfs(CRFS_TYPE_INT22, 0, esc->rpmP(), esc);
+        sensorCrfsP = new SensorCrfs(CRSF_TYPE_INT22, 0, esc->rpmP(), esc);
         sensorCrfsP->setSensorId(addSensor(sensorCrfsP));
         sensorCrfsP->setText("RPM");
         sensorCrfsP->setUnit("RPM");
-        sensorCrfsP = new SensorCrfs(CRFS_TYPE_INT14, 1, esc->currentP(), esc);
+        sensorCrfsP = new SensorCrfs(CRSF_TYPE_INT14, 1, esc->currentP(), esc);
         sensorCrfsP->setSensorId(addSensor(sensorCrfsP));
         sensorCrfsP->setText("Current");
         sensorCrfsP->setUnit("A");
-        sensorCrfsP = new SensorCrfs(CRFS_TYPE_INT14, 2, esc->voltageP(), esc);
+        sensorCrfsP = new SensorCrfs(CRSF_TYPE_INT14, 2, esc->voltageP(), esc);
         sensorCrfsP->setSensorId(addSensor(sensorCrfsP));
         sensorCrfsP->setText("Voltage");
         sensorCrfsP->setUnit("V");
-        sensorCrfsP = new SensorCrfs(CRFS_TYPE_INT14, 1, esc->becCurrentP(), esc);
+        sensorCrfsP = new SensorCrfs(CRSF_TYPE_INT14, 1, esc->becCurrentP(), esc);
         sensorCrfsP->setSensorId(addSensor(sensorCrfsP));
         sensorCrfsP->setText("BEC Current");
         sensorCrfsP->setUnit("A");
-        sensorCrfsP = new SensorCrfs(CRFS_TYPE_INT14, 2, esc->becVoltageP(), esc);
+        sensorCrfsP = new SensorCrfs(CRSF_TYPE_INT14, 2, esc->becVoltageP(), esc);
         sensorCrfsP->setSensorId(addSensor(sensorCrfsP));
         sensorCrfsP->setText("BEC Voltage");
         sensorCrfsP->setUnit("V");
-        sensorCrfsP = new SensorCrfs(CRFS_TYPE_INT14, 0, esc->tempFetP(), esc);
+        sensorCrfsP = new SensorCrfs(CRSF_TYPE_INT14, 0, esc->tempFetP(), esc);
         sensorCrfsP->setSensorId(addSensor(sensorCrfsP));
         sensorCrfsP->setText("Temp FET");
         sensorCrfsP->setUnit("C");
-        sensorCrfsP = new SensorCrfs(CRFS_TYPE_INT14, 0, esc->tempBecP(), esc);
+        sensorCrfsP = new SensorCrfs(CRSF_TYPE_INT14, 0, esc->tempBecP(), esc);
         sensorCrfsP->setSensorId(addSensor(sensorCrfsP));
         sensorCrfsP->setText("Temp BEC");
         sensorCrfsP->setUnit("C");
-        sensorCrfsP = new SensorCrfs(CRFS_TYPE_INT14, 2, esc->cellVoltageP(), esc);
+        sensorCrfsP = new SensorCrfs(CRSF_TYPE_INT14, 2, esc->cellVoltageP(), esc);
         sensorCrfsP->setSensorId(addSensor(sensorCrfsP));
         sensorCrfsP->setText("Cell Voltage");
         sensorCrfsP->setUnit("V");
-        sensorCrfsP = new SensorCrfs(CRFS_TYPE_INT14, 0, esc->consumptionP(), esc);
+        sensorCrfsP = new SensorCrfs(CRSF_TYPE_INT14, 0, esc->consumptionP(), esc);
         sensorCrfsP->setSensorId(addSensor(sensorCrfsP));
         sensorCrfsP->setText("Consumption");
         sensorCrfsP->setUnit("mAh");
@@ -237,31 +237,31 @@ void Crfs::setConfig(Config &config)
         EscApdF *esc;
         esc = new EscApdF(ESC_SERIAL, ALPHA(config.average.rpm), ALPHA(config.average.volt), ALPHA(config.average.curr), ALPHA(config.average.temp));
         esc->begin();
-        sensorCrfsP = new SensorCrfs(CRFS_TYPE_INT22, 0, esc->rpmP(), esc);
+        sensorCrfsP = new SensorCrfs(CRSF_TYPE_INT22, 0, esc->rpmP(), esc);
         sensorCrfsP->setSensorId(addSensor(sensorCrfsP));
         sensorCrfsP->setText("RPM");
         sensorCrfsP->setUnit("RPM");
-        sensorCrfsP = new SensorCrfs(CRFS_TYPE_INT14, 1, esc->currentP(), esc);
+        sensorCrfsP = new SensorCrfs(CRSF_TYPE_INT14, 1, esc->currentP(), esc);
         sensorCrfsP->setSensorId(addSensor(sensorCrfsP));
         sensorCrfsP->setText("Current");
         sensorCrfsP->setUnit("A");
-        sensorCrfsP = new SensorCrfs(CRFS_TYPE_INT14, 2, esc->voltageP(), esc);
+        sensorCrfsP = new SensorCrfs(CRSF_TYPE_INT14, 2, esc->voltageP(), esc);
         sensorCrfsP->setSensorId(addSensor(sensorCrfsP));
         sensorCrfsP->setText("Voltage");
         sensorCrfsP->setUnit("V");
-        sensorCrfsP = new SensorCrfs(CRFS_TYPE_INT14, 0, esc->tempP(), esc);
+        sensorCrfsP = new SensorCrfs(CRSF_TYPE_INT14, 0, esc->tempP(), esc);
         sensorCrfsP->setSensorId(addSensor(sensorCrfsP));
         sensorCrfsP->setText("Temperature");
         sensorCrfsP->setUnit("C");
-        sensorCrfsP = new SensorCrfs(CRFS_TYPE_INT14, 0, esc->consumptionP(), esc);
+        sensorCrfsP = new SensorCrfs(CRSF_TYPE_INT14, 0, esc->consumptionP(), esc);
         sensorCrfsP->setSensorId(addSensor(sensorCrfsP));
         sensorCrfsP->setText("Consumption");
         sensorCrfsP->setUnit("mAh");
-        sensorCrfsP = new SensorCrfs(CRFS_TYPE_INT14, 2, esc->cellVoltageP(), esc);
+        sensorCrfsP = new SensorCrfs(CRSF_TYPE_INT14, 2, esc->cellVoltageP(), esc);
         sensorCrfsP->setSensorId(addSensor(sensorCrfsP));
         sensorCrfsP->setText("Cell Voltage");
         sensorCrfsP->setUnit("V");
-        sensorCrfsP = new SensorCrfs(CRFS_TYPE_INT14, 0, esc->consumptionP(), esc);
+        sensorCrfsP = new SensorCrfs(CRSF_TYPE_INT14, 0, esc->consumptionP(), esc);
         sensorCrfsP->setSensorId(addSensor(sensorCrfsP));
         sensorCrfsP->setText("Consumption");
         sensorCrfsP->setUnit("mAh");
@@ -272,27 +272,27 @@ void Crfs::setConfig(Config &config)
         EscApdHV *esc;
         esc = new EscApdHV(ESC_SERIAL, ALPHA(config.average.rpm), ALPHA(config.average.volt), ALPHA(config.average.curr), ALPHA(config.average.temp));
         esc->begin();
-        sensorCrfsP = new SensorCrfs(CRFS_TYPE_INT22, 0, esc->rpmP(), esc);
+        sensorCrfsP = new SensorCrfs(CRSF_TYPE_INT22, 0, esc->rpmP(), esc);
         sensorCrfsP->setSensorId(addSensor(sensorCrfsP));
         sensorCrfsP->setText("RPM");
         sensorCrfsP->setUnit("RPM");
-        sensorCrfsP = new SensorCrfs(CRFS_TYPE_INT14, 1, esc->currentP(), esc);
+        sensorCrfsP = new SensorCrfs(CRSF_TYPE_INT14, 1, esc->currentP(), esc);
         sensorCrfsP->setSensorId(addSensor(sensorCrfsP));
         sensorCrfsP->setText("Current");
         sensorCrfsP->setUnit("A");
-        sensorCrfsP = new SensorCrfs(CRFS_TYPE_INT14, 2, esc->voltageP(), esc);
+        sensorCrfsP = new SensorCrfs(CRSF_TYPE_INT14, 2, esc->voltageP(), esc);
         sensorCrfsP->setSensorId(addSensor(sensorCrfsP));
         sensorCrfsP->setText("Voltage");
         sensorCrfsP->setUnit("V");
-        sensorCrfsP = new SensorCrfs(CRFS_TYPE_INT14, 0, esc->tempP(), esc);
+        sensorCrfsP = new SensorCrfs(CRSF_TYPE_INT14, 0, esc->tempP(), esc);
         sensorCrfsP->setSensorId(addSensor(sensorCrfsP));
         sensorCrfsP->setText("Temperature");
         sensorCrfsP->setUnit("C");
-        sensorCrfsP = new SensorCrfs(CRFS_TYPE_INT14, 2, esc->cellVoltageP(), esc);
+        sensorCrfsP = new SensorCrfs(CRSF_TYPE_INT14, 2, esc->cellVoltageP(), esc);
         sensorCrfsP->setSensorId(addSensor(sensorCrfsP));
         sensorCrfsP->setText("Cell Voltage");
         sensorCrfsP->setUnit("V");
-        sensorCrfsP = new SensorCrfs(CRFS_TYPE_INT14, 0, esc->consumptionP(), esc);
+        sensorCrfsP = new SensorCrfs(CRSF_TYPE_INT14, 0, esc->consumptionP(), esc);
         sensorCrfsP->setSensorId(addSensor(sensorCrfsP));
         sensorCrfsP->setText("Consumption");
         sensorCrfsP->setUnit("mAh");

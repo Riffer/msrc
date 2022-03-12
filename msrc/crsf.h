@@ -1,5 +1,5 @@
-#ifndef CRFS_H
-#define CRFS_H
+#ifndef CRSF_H
+#define CRSF_H
 
 #include <Arduino.h>
 #include "softserial.h"
@@ -24,8 +24,8 @@
 #include "configeeprom.h"
 #include "pwmout.h"
 
-#define CRFS_PACKET_LENGTH 26
-#define CRFS_TIMEOUT 500
+#define CRSF_PACKET_LENGTH 26
+#define CRSF_TIMEOUT 500
 
 
 class Crfs

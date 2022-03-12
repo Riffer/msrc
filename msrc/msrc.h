@@ -38,7 +38,7 @@
 #include "multiplex.h"
 #include "jetiex.h"
 #include "hitec.h"
-#include "crfs.h"
+#include "crsf.h"
 
 #if RX_PROTOCOL == RX_SMARTPORT
 Smartport smartport(SMARTPORT_FRSKY_SBUS_SERIAL);
