@@ -28,7 +28,7 @@
 #define CRSF_TIMEOUT 500
 
 
-class Crfs
+class Crsf
 {
 private:
     AbstractSerial &serial_;
@@ -36,8 +36,8 @@ private:
     bool isBatteryEnabled = false;
 
 public:
-    Crfs(AbstractSerial &serial);
-    ~Crfs();
+    Crsf(AbstractSerial &serial);
+    ~Crsf();
     void begin();
     void update();
     void setConfig(Config &config);
