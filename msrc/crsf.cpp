@@ -17,52 +17,163 @@ void Crsf::begin()
     setConfig(config);
 }
 
-void Crsf::sendPacket(uint8_t packetId)
+void Crsf::sendU8(uint8_t value, uint8_t *buffer)
 {
-    static uint8_t packetCount = 0;
-    digitalWrite(LED_BUILTIN, HIGH);
-    if (isGpsEnabled) sendGps();
-    if (isBatteryEnabled) sendBattery();
-    if (isVarioEnabled) sendVario();
-    packetCount++;
+    *buffer = value;
+}
+
+void Crsf::sendU16(uint16_t value, uint8_t *buffer)
+{
+    memcpy(buffer, (uint8_t *)(__builtin_bswap16(value)), 2);
+}
+
+void Crsf::sendS16(int16_t value, uint8_t *buffer)
+{
+    memcpy(buffer, (uint8_t *)(__builtin_bswap16(value)), 2);
+}
+
+void Crsf::sendU24(uint32_t value, uint8_t *buffer)
+{
+    memcpy(buffer, (uint8_t *)(__builtin_bswap32(value << 8)), 3);
+}
+
+void Crsf::sendS32(int32_t value, uint8_t *buffer)
+{
+    memcpy(buffer, (uint8_t *)(__builtin_bswap32(value)), 4);
+}
+
+void Crsf::sendGps()
+{
+    uint8_t buffer[CRSF_FRAME_LENGTH_NON_PAYLOAD + CRSF_FRAME_GPS_PAYLOAD_SIZE];
+    uint8_t pos = 0;
+    sendU8(CRSF_ADDRESS_GPS, buffer);
+    pos++;
+    sendU8(CRSF_FRAME_LENGTH_NON_PAYLOAD + CRSF_FRAME_GPS_PAYLOAD_SIZE, buffer + pos);
+    pos++;
+    sendU8(CRSF_FRAMETYPE_GPS, buffer + pos);
+    pos++;
+    sendS32(*csrfGps.latP * 10E7, buffer + pos);
+    pos += 4;
+    sendS32(*csrfGps.lonP * 10E7, buffer + pos);
+    pos += 4;
+    sendU16(*csrfGps.spdP * 1.852 * 10, buffer + pos);
+    pos += 2;
+    sendU16(*csrfGps.cogP * 100, buffer + pos);
+    pos += 2;
+    sendU16(*csrfGps.altP + 1000, buffer + pos);
+    pos += 2;
+    sendU8(*csrfGps.satP, buffer + pos);
+    pos++;
+    uint8_t crcValue = getCrc(buffer + 2, CRSF_FRAME_LENGTH_NON_PAYLOAD + CRSF_FRAME_GPS_PAYLOAD_SIZE - 2);
+    sendU8(crcValue, buffer + pos);
+    serial_.writeBytes(buffer, CRSF_FRAME_LENGTH_NON_PAYLOAD + CRSF_FRAME_GPS_PAYLOAD_SIZE);
 #ifdef DEBUG
     DEBUG_PRINT(">");
-    for (uint8_t i = 0; i < lengthExBuffer + 8; i++)
+    for (uint8_t i = 0; i < CRSF_FRAME_LENGTH_NON_PAYLOAD + CRSF_FRAME_VARIO_SENSOR_PAYLOAD_SIZE; i++)
     {
         DEBUG_PRINT_HEX(buffer[i]);
         DEBUG_PRINT(" ");
     }
     DEBUG_PRINTLN();
 #endif
+}
+
+void Crsf::sendBattery()
+{
+    uint8_t buffer[CRSF_FRAME_LENGTH_NON_PAYLOAD + CRSF_FRAME_BATTERY_SENSOR_PAYLOAD_SIZE];
+    uint8_t pos = 0;
+    sendU8(CRSF_ADDRESS_GPS, buffer + pos);
+    pos++;
+    sendU8(CRSF_FRAME_LENGTH_NON_PAYLOAD + CRSF_FRAME_BATTERY_SENSOR_PAYLOAD_SIZE, buffer + pos);
+    pos++;
+    sendU8(CRSF_FRAMETYPE_BATTERY_SENSOR, buffer + pos);
+    pos++;
+    sendU16(*csrfBattery.voltageP * 100, buffer + pos);
+    pos += 2;
+    sendU16(*csrfBattery.currentP * 100, buffer + pos);
+    pos += 2;
+    sendU24(*csrfBattery.consumptionP, buffer + pos);
+    pos += 3;
+    sendU8(0, buffer + pos);
+    pos++;
+    uint8_t crcValue = getCrc(buffer + 2, CRSF_FRAME_LENGTH_NON_PAYLOAD + CRSF_FRAME_GPS_PAYLOAD_SIZE - 2);
+    sendU8(crcValue, buffer + pos);
+    serial_.writeBytes(buffer, CRSF_FRAME_LENGTH_NON_PAYLOAD + CRSF_FRAME_GPS_PAYLOAD_SIZE);
+#ifdef DEBUG
+    DEBUG_PRINT(">");
+    for (uint8_t i = 0; i < CRSF_FRAME_LENGTH_NON_PAYLOAD + CRSF_FRAME_VARIO_SENSOR_PAYLOAD_SIZE; i++)
+    {
+        DEBUG_PRINT_HEX(buffer[i]);
+        DEBUG_PRINT(" ");
+    }
+    DEBUG_PRINTLN();
+#endif
+}
+
+void Crsf::sendVario()
+{
+
+    uint8_t buffer[CRSF_FRAME_LENGTH_NON_PAYLOAD + CRSF_FRAME_VARIO_SENSOR_PAYLOAD_SIZE];
+    uint8_t pos = 0;
+    sendU8(CRSF_ADDRESS_GPS, buffer + pos);
+    pos++;
+    sendU8(CRSF_FRAME_LENGTH_NON_PAYLOAD + CRSF_FRAME_VARIO_SENSOR_PAYLOAD_SIZE, buffer + pos);
+    pos++;
+    sendU8(CRSF_FRAMETYPE_VARIO_SENSOR, buffer + pos);
+    pos++;
+    sendS16(*csrfVario.vSpdP * 10, buffer + pos);
+    pos += 2;
+    uint8_t crcValue = getCrc(buffer + 2, CRSF_FRAME_LENGTH_NON_PAYLOAD + CRSF_FRAME_GPS_PAYLOAD_SIZE - 2);
+    sendU8(crcValue, buffer + pos);
+    serial_.writeBytes(buffer, CRSF_FRAME_LENGTH_NON_PAYLOAD + CRSF_FRAME_GPS_PAYLOAD_SIZE);
+#ifdef DEBUG
+    DEBUG_PRINT(">");
+    for (uint8_t i = 0; i < CRSF_FRAME_LENGTH_NON_PAYLOAD + CRSF_FRAME_VARIO_SENSOR_PAYLOAD_SIZE; i++)
+    {
+        DEBUG_PRINT_HEX(buffer[i]);
+        DEBUG_PRINT(" ");
+    }
+    DEBUG_PRINTLN();
+#endif
+}
+
+void Crsf::sendPacket()
+{
+    static uint8_t packetCount = 0;
+    digitalWrite(LED_BUILTIN, HIGH);
+    if (isGpsEnabled && packetCount % 3 == 0)
+        sendGps();
+    else if (isBatteryEnabled && packetCount % 3 == 1)
+        sendBattery();
+    else if (isVarioEnabled && packetCount % 3 == 2)
+        sendVario();
     digitalWrite(LED_BUILTIN, LOW);
+    packetCount++;
 }
 
 void Crsf::update()
 {
+
     uint8_t status = CRSF_WAIT;
     static bool mute = true;
+
 #if defined(SIM_RX)
     static uint16_t ts = 0;
-    static uint8_t packetId = 0;
     if ((uint16_t)(millis() - ts) > 100)
     {
         if (!mute)
         {
             status = CRSF_SEND;
-            packetId++;
         }
         mute = !mute;
         ts = millis();
-    }
 #else
-    uint8_t packetId;
     uint8_t length = serial_.availableTimeout();
-    static uint16_t ts = 0;
     if (length)
     {
         uint8_t buff[length];
         serial_.readBytes(buff, length);
-#ifdef DEBUG_PACKET2
+#ifdef DEBUG_PACKET
         DEBUG_PRINT("<");
         for (uint8_t i = 0; i < length; i++)
         {
@@ -72,8 +183,7 @@ void Crsf::update()
         }
         DEBUG_PRINTLN();
 #endif
-        uint8_t packet[CRSF_PACKET_LENGHT];
-        if (length == CRSF_PACKET_LENGHT)
+        if (length == CRSF_FRAME_LENGTH_NON_PAYLOAD + CRSF_FRAME_RC_CHANNELS_PAYLOAD_SIZE)
         {
             if (!mute)
             {
@@ -82,10 +192,11 @@ void Crsf::update()
             mute = !mute;
         }
 #endif
+    }
     if (status == CRSF_SEND)
     {
         if (serial_.timestamp() < 1500)
-            sendPacket(packetId);
+            sendPacket();
 #ifdef DEBUG
         else
         {
@@ -93,260 +204,155 @@ void Crsf::update()
             DEBUG_PRINTLN();
         }
 #endif
-        }
     }
-    // update sensor
-    static uint8_t cont = 0;
-    if (sensorCrsfP[cont])
+
+    static uint8_t sensorCont = 0;
+    if (isGpsEnabled && sensorCont % 3 == 0)
+        csrfGps.deviceP->update();
+    if (isBatteryEnabled && sensorCont % 3 == 1)
     {
-        sensorCrsfP[cont]->update();
+        csrfBattery.deviceVoltageP->update();
+        csrfBattery.deviceCurrentP->update();
     }
-    cont++;
-    if (cont == 16 || sensorCrsfP == NULL)
-        cont = 0;
+    if (isVarioEnabled && sensorCont % 3 == 2)
+        csrfVario.deviceP->update();
+    sensorCont++;
 }
 
 void Crsf::setConfig(Config &config)
 {
-    /*
     if (ESC_PROTOCOL == PROTOCOL_HW_V4)
     {
-        SensorCrsf *sensorCrsfP;
         EscHW4 *esc;
         esc = new EscHW4(ESC_SERIAL, ALPHA(config.average.rpm), ALPHA(config.average.volt), ALPHA(config.average.curr), ALPHA(config.average.temp), 0);
         esc->begin();
-        PwmOut pwmOut;
-        pwmOut.setRpmP(esc->rpmP());
-        sensorCrsfP = new SensorCrsf(CRSF_TYPE_INT22, 0, esc->rpmP(), esc);
-        sensorCrsfP->setSensorId(addSensor(sensorCrsfP));
-        sensorCrsfP->setText("RPM");
-        sensorCrsfP->setUnit("RPM");
-        sensorCrsfP = new SensorCrsf(CRSF_TYPE_INT14, 1, esc->currentP(), esc);
-        sensorCrsfP->setSensorId(addSensor(sensorCrsfP));
-        sensorCrsfP->setText("Current");
-        sensorCrsfP->setUnit("A");
-        sensorCrsfP = new SensorCrsf(CRSF_TYPE_INT14, 2, esc->voltageP(), esc);
-        sensorCrsfP->setSensorId(addSensor(sensorCrsfP));
-        sensorCrsfP->setText("Voltage");
-        sensorCrsfP->setUnit("V");
-        sensorCrsfP = new SensorCrsf(CRSF_TYPE_INT14, 0, esc->tempFetP(), esc);
-        sensorCrsfP->setSensorId(addSensor(sensorCrsfP));
-        sensorCrsfP->setText("Temp FET");
-        sensorCrsfP->setUnit("C");
-        sensorCrsfP = new SensorCrsf(CRSF_TYPE_INT14, 0, esc->tempBecP(), esc);
-        sensorCrsfP->setSensorId(addSensor(sensorCrsfP));
-        sensorCrsfP->setText("Temp BEC");
-        sensorCrsfP->setUnit("C");
-        sensorCrsfP = new SensorCrsf(CRSF_TYPE_INT14, 2, esc->cellVoltageP(), esc);
-        sensorCrsfP->setSensorId(addSensor(sensorCrsfP));
-        sensorCrsfP->setText("Cell Voltage");
-        sensorCrsfP->setUnit("V");
-        sensorCrsfP = new SensorCrsf(CRSF_TYPE_INT14, 0, esc->consumptionP(), esc);
-        sensorCrsfP->setSensorId(addSensor(sensorCrsfP));
-        sensorCrsfP->setText("Consumption");
-        sensorCrsfP->setUnit("mAh");
+        csrfBattery.deviceVoltageP = esc;
+        csrfBattery.deviceCurrentP = esc;
+        csrfBattery.voltageP = esc->voltageP();
+        csrfBattery.currentP = esc->currentP();
+        csrfBattery.consumptionP = esc->consumptionP();
+        isBatteryEnabled = true;
     }
     if (ESC_PROTOCOL == PROTOCOL_CASTLE)
     {
-        SensorCrsf *sensorCrsfP;
         EscCastle *esc;
         esc = new EscCastle(ALPHA(config.average.rpm), ALPHA(config.average.volt), ALPHA(config.average.curr), ALPHA(config.average.temp));
         esc->begin();
-        sensorCrsfP = new SensorCrsf(CRSF_TYPE_INT22, 0, esc->rpmP(), esc);
-        sensorCrsfP->setSensorId(addSensor(sensorCrsfP));
-        sensorCrsfP->setText("RPM");
-        sensorCrsfP->setUnit("RPM");
-        sensorCrsfP = new SensorCrsf(CRSF_TYPE_INT14, 1, esc->currentP(), esc);
-        sensorCrsfP->setSensorId(addSensor(sensorCrsfP));
-        sensorCrsfP->setText("Current");
-        sensorCrsfP->setUnit("A");
-        sensorCrsfP = new SensorCrsf(CRSF_TYPE_INT14, 2, esc->voltageP(), esc);
-        sensorCrsfP->setSensorId(addSensor(sensorCrsfP));
-        sensorCrsfP->setText("Voltage");
-        sensorCrsfP->setUnit("V");
-        sensorCrsfP = new SensorCrsf(CRSF_TYPE_INT14, 2, esc->rippleVoltageP(), esc);
-        sensorCrsfP->setSensorId(addSensor(sensorCrsfP));
-        sensorCrsfP->setText("Ripple Voltage");
-        sensorCrsfP->setUnit("V");
-        sensorCrsfP = new SensorCrsf(CRSF_TYPE_INT14, 2, esc->becCurrentP(), esc);
-        sensorCrsfP->setSensorId(addSensor(sensorCrsfP));
-        sensorCrsfP->setText("BEC Current");
-        sensorCrsfP->setUnit("A");
-        sensorCrsfP = new SensorCrsf(CRSF_TYPE_INT14, 2, esc->becVoltageP(), esc);
-        sensorCrsfP->setSensorId(addSensor(sensorCrsfP));
-        sensorCrsfP->setText("BEC Voltage");
-        sensorCrsfP->setUnit("V");
-        sensorCrsfP = new SensorCrsf(CRSF_TYPE_INT14, 0, esc->temperatureP(), esc);
-        sensorCrsfP->setSensorId(addSensor(sensorCrsfP));
-        sensorCrsfP->setText("Temperature");
-        sensorCrsfP->setUnit("C");
-        sensorCrsfP = new SensorCrsf(CRSF_TYPE_INT14, 2, esc->cellVoltageP(), esc);
-        sensorCrsfP->setSensorId(addSensor(sensorCrsfP));
-        sensorCrsfP->setText("Cell Voltage");
-        sensorCrsfP->setUnit("V");
-        sensorCrsfP = new SensorCrsf(CRSF_TYPE_INT14, 0, esc->consumptionP(), esc);
-        sensorCrsfP->setSensorId(addSensor(sensorCrsfP));
-        sensorCrsfP->setText("Consumption");
-        sensorCrsfP->setUnit("mAh");
+        csrfBattery.deviceVoltageP = esc;
+        csrfBattery.deviceCurrentP = esc;
+        csrfBattery.voltageP = esc->voltageP();
+        csrfBattery.currentP = esc->currentP();
+        csrfBattery.consumptionP = esc->consumptionP();
+        isBatteryEnabled = true;
     }
     if (ESC_PROTOCOL == PROTOCOL_KONTRONIK)
     {
-        SensorCrsf *sensorCrsfP;
         EscKontronik *esc;
         esc = new EscKontronik(ESC_SERIAL, ALPHA(config.average.rpm), ALPHA(config.average.volt), ALPHA(config.average.curr), ALPHA(config.average.temp));
         esc->begin();
-        sensorCrsfP = new SensorCrsf(CRSF_TYPE_INT22, 0, esc->rpmP(), esc);
-        sensorCrsfP->setSensorId(addSensor(sensorCrsfP));
-        sensorCrsfP->setText("RPM");
-        sensorCrsfP->setUnit("RPM");
-        sensorCrsfP = new SensorCrsf(CRSF_TYPE_INT14, 1, esc->currentP(), esc);
-        sensorCrsfP->setSensorId(addSensor(sensorCrsfP));
-        sensorCrsfP->setText("Current");
-        sensorCrsfP->setUnit("A");
-        sensorCrsfP = new SensorCrsf(CRSF_TYPE_INT14, 2, esc->voltageP(), esc);
-        sensorCrsfP->setSensorId(addSensor(sensorCrsfP));
-        sensorCrsfP->setText("Voltage");
-        sensorCrsfP->setUnit("V");
-        sensorCrsfP = new SensorCrsf(CRSF_TYPE_INT14, 1, esc->becCurrentP(), esc);
-        sensorCrsfP->setSensorId(addSensor(sensorCrsfP));
-        sensorCrsfP->setText("BEC Current");
-        sensorCrsfP->setUnit("A");
-        sensorCrsfP = new SensorCrsf(CRSF_TYPE_INT14, 2, esc->becVoltageP(), esc);
-        sensorCrsfP->setSensorId(addSensor(sensorCrsfP));
-        sensorCrsfP->setText("BEC Voltage");
-        sensorCrsfP->setUnit("V");
-        sensorCrsfP = new SensorCrsf(CRSF_TYPE_INT14, 0, esc->tempFetP(), esc);
-        sensorCrsfP->setSensorId(addSensor(sensorCrsfP));
-        sensorCrsfP->setText("Temp FET");
-        sensorCrsfP->setUnit("C");
-        sensorCrsfP = new SensorCrsf(CRSF_TYPE_INT14, 0, esc->tempBecP(), esc);
-        sensorCrsfP->setSensorId(addSensor(sensorCrsfP));
-        sensorCrsfP->setText("Temp BEC");
-        sensorCrsfP->setUnit("C");
-        sensorCrsfP = new SensorCrsf(CRSF_TYPE_INT14, 2, esc->cellVoltageP(), esc);
-        sensorCrsfP->setSensorId(addSensor(sensorCrsfP));
-        sensorCrsfP->setText("Cell Voltage");
-        sensorCrsfP->setUnit("V");
-        sensorCrsfP = new SensorCrsf(CRSF_TYPE_INT14, 0, esc->consumptionP(), esc);
-        sensorCrsfP->setSensorId(addSensor(sensorCrsfP));
-        sensorCrsfP->setText("Consumption");
-        sensorCrsfP->setUnit("mAh");
+        csrfBattery.deviceVoltageP = esc;
+        csrfBattery.deviceCurrentP = esc;
+        csrfBattery.voltageP = esc->voltageP();
+        csrfBattery.currentP = esc->currentP();
+        csrfBattery.consumptionP = esc->consumptionP();
+        isBatteryEnabled = true;
     }
     if (ESC_PROTOCOL == PROTOCOL_APD_F)
     {
-        SensorCrsf *sensorCrsfP;
         EscApdF *esc;
         esc = new EscApdF(ESC_SERIAL, ALPHA(config.average.rpm), ALPHA(config.average.volt), ALPHA(config.average.curr), ALPHA(config.average.temp));
         esc->begin();
-        sensorCrsfP = new SensorCrsf(CRSF_TYPE_INT22, 0, esc->rpmP(), esc);
-        sensorCrsfP->setSensorId(addSensor(sensorCrsfP));
-        sensorCrsfP->setText("RPM");
-        sensorCrsfP->setUnit("RPM");
-        sensorCrsfP = new SensorCrsf(CRSF_TYPE_INT14, 1, esc->currentP(), esc);
-        sensorCrsfP->setSensorId(addSensor(sensorCrsfP));
-        sensorCrsfP->setText("Current");
-        sensorCrsfP->setUnit("A");
-        sensorCrsfP = new SensorCrsf(CRSF_TYPE_INT14, 2, esc->voltageP(), esc);
-        sensorCrsfP->setSensorId(addSensor(sensorCrsfP));
-        sensorCrsfP->setText("Voltage");
-        sensorCrsfP->setUnit("V");
-        sensorCrsfP = new SensorCrsf(CRSF_TYPE_INT14, 0, esc->tempP(), esc);
-        sensorCrsfP->setSensorId(addSensor(sensorCrsfP));
-        sensorCrsfP->setText("Temperature");
-        sensorCrsfP->setUnit("C");
-        sensorCrsfP = new SensorCrsf(CRSF_TYPE_INT14, 0, esc->consumptionP(), esc);
-        sensorCrsfP->setSensorId(addSensor(sensorCrsfP));
-        sensorCrsfP->setText("Consumption");
-        sensorCrsfP->setUnit("mAh");
-        sensorCrsfP = new SensorCrsf(CRSF_TYPE_INT14, 2, esc->cellVoltageP(), esc);
-        sensorCrsfP->setSensorId(addSensor(sensorCrsfP));
-        sensorCrsfP->setText("Cell Voltage");
-        sensorCrsfP->setUnit("V");
-        sensorCrsfP = new SensorCrsf(CRSF_TYPE_INT14, 0, esc->consumptionP(), esc);
-        sensorCrsfP->setSensorId(addSensor(sensorCrsfP));
-        sensorCrsfP->setText("Consumption");
-        sensorCrsfP->setUnit("mAh");
+        csrfBattery.deviceVoltageP = esc;
+        csrfBattery.deviceCurrentP = esc;
+        csrfBattery.voltageP = esc->voltageP();
+        csrfBattery.currentP = esc->currentP();
+        csrfBattery.consumptionP = esc->consumptionP();
+        isBatteryEnabled = true;
     }
     if (ESC_PROTOCOL == PROTOCOL_APD_HV)
     {
-        SensorCrsf *sensorCrsfP;
         EscApdHV *esc;
         esc = new EscApdHV(ESC_SERIAL, ALPHA(config.average.rpm), ALPHA(config.average.volt), ALPHA(config.average.curr), ALPHA(config.average.temp));
         esc->begin();
-        sensorCrsfP = new SensorCrsf(CRSF_TYPE_INT22, 0, esc->rpmP(), esc);
-        sensorCrsfP->setSensorId(addSensor(sensorCrsfP));
-        sensorCrsfP->setText("RPM");
-        sensorCrsfP->setUnit("RPM");
-        sensorCrsfP = new SensorCrsf(CRSF_TYPE_INT14, 1, esc->currentP(), esc);
-        sensorCrsfP->setSensorId(addSensor(sensorCrsfP));
-        sensorCrsfP->setText("Current");
-        sensorCrsfP->setUnit("A");
-        sensorCrsfP = new SensorCrsf(CRSF_TYPE_INT14, 2, esc->voltageP(), esc);
-        sensorCrsfP->setSensorId(addSensor(sensorCrsfP));
-        sensorCrsfP->setText("Voltage");
-        sensorCrsfP->setUnit("V");
-        sensorCrsfP = new SensorCrsf(CRSF_TYPE_INT14, 0, esc->tempP(), esc);
-        sensorCrsfP->setSensorId(addSensor(sensorCrsfP));
-        sensorCrsfP->setText("Temperature");
-        sensorCrsfP->setUnit("C");
-        sensorCrsfP = new SensorCrsf(CRSF_TYPE_INT14, 2, esc->cellVoltageP(), esc);
-        sensorCrsfP->setSensorId(addSensor(sensorCrsfP));
-        sensorCrsfP->setText("Cell Voltage");
-        sensorCrsfP->setUnit("V");
-        sensorCrsfP = new SensorCrsf(CRSF_TYPE_INT14, 0, esc->consumptionP(), esc);
-        sensorCrsfP->setSensorId(addSensor(sensorCrsfP));
-        sensorCrsfP->setText("Consumption");
-        sensorCrsfP->setUnit("mAh");
+        csrfBattery.deviceVoltageP = esc;
+        csrfBattery.deviceCurrentP = esc;
+        csrfBattery.voltageP = esc->voltageP();
+        csrfBattery.currentP = esc->currentP();
+        csrfBattery.consumptionP = esc->consumptionP();
+        isBatteryEnabled = true;
     }
-    */
-    
     if (config.gps == true)
     {
-        SensorCrsf *sensorCrsfP;
         Bn220 *gps;
         gps = new Bn220(GPS_SERIAL, GPS_BAUD_RATE);
         gps->begin();
+        csrfGps.deviceP = gps;
+        csrfGps.latP = gps->latP();
+        csrfGps.lonP = gps->lonP();
+        csrfGps.spdP = gps->spdP();
+        csrfGps.cogP = gps->cogP();
+        csrfGps.satP = gps->satP();
         isGpsEnabled = true;
-
+        csrfVario.deviceP = gps;
+        csrfVario.vSpdP = gps->varioP();
+        isVarioEnabled = true;
     }
     if (config.voltage1 == true)
     {
-        SensorCrsf *sensorCrsfP;
         Voltage *voltage;
         voltage = new Voltage(PIN_VOLTAGE1, ALPHA(config.average.volt), VOLTAGE1_MULTIPLIER);
+        csrfBattery.deviceVoltageP = voltage;
+        csrfBattery.voltageP = voltage->valueP();
         isBatteryEnabled = true;
-
     }
     if (config.current == true)
     {
-        SensorCrsf *sensorCrsfP;
         Current *current;
         current = new Current(PIN_CURRENT, ALPHA(config.average.curr), CURRENT_MULTIPLIER);
+        csrfBattery.deviceCurrentP = current;
+        csrfBattery.currentP = current->valueP();
+        csrfBattery.consumptionP = current->consumptionP();
         isBatteryEnabled = true;
     }
-
+    if (config.deviceI2C1Type == I2C_BMP280)
+    {
+        Bmp280 *bmp;
+        bmp = new Bmp280(config.deviceI2C1Address, ALPHA(config.average.temp), ALPHA(1));
+        bmp->begin();
+        csrfVario.deviceP = bmp;
+        csrfVario.vSpdP = bmp->varioP();
+        isVarioEnabled = true;
+    }
+    if (config.deviceI2C1Type == I2C_MS5611)
+    {
+        MS5611 *bmp;
+        bmp = new MS5611(config.deviceI2C1Address, ALPHA(config.average.temp), ALPHA(1));
+        bmp->begin();
+        csrfVario.deviceP = bmp;
+        csrfVario.vSpdP = bmp->varioP();
+        isVarioEnabled = true;
+    }
 }
 
-uint8_t Crsf::crc(uint8_t *crc, uint8_t crc_length)
+uint8_t Crsf::getCrc(uint8_t *buffer, uint8_t size)
 {
-    uint8_t crc_up = 0;
-    uint8_t c;
-    for (c = 0; c < crc_length; c++)
+    uint8_t crc = 0;
+    for (uint8_t i = 0; i < size; i++)
     {
-        crc_up = update_crc8(crc[c], crc_up);
+        crc = update_crc(crc, *(buffer + i));
     }
-    return crc_up;
+    return crc;
 }
 
-uint8_t Crsf::update_crc(uint8_t crc, uint8_t crc_seed)
+uint8_t Crsf::update_crc(uint8_t crc, unsigned char a)
 {
-    uint8_t crc_u;
-    uint8_t i;
-    crc_u = crc;
-    crc_u ^= crc_seed;
-    for (i = 0; i < 8; i++)
+    crc ^= a;
+    for (int ii = 0; ii < 8; ++ii)
     {
-        crc_u = (crc_u & 0x80) ? 0x07 ^ (crc_u << 1) : (crc_u << 1);
+        if (crc & 0x80)
+            crc = (crc << 1) ^ 0xD5;
+        else
+            crc = crc << 1;
     }
-    return crc_u;
+    return crc;
 }
