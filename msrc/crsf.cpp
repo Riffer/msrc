@@ -19,11 +19,12 @@ void Crsf::begin()
 
 void Crsf::sendPacket(uint8_t packetId)
 {
+    static uint8_t packetCount = 0;
+    digitalWrite(LED_BUILTIN, HIGH);
     if (isGpsEnabled) sendGps();
     if (isBatteryEnabled) sendBattery();
-    
-    digitalWrite(LED_BUILTIN, HIGH);
-    
+    if (isVarioEnabled) sendVario();
+    packetCount++;
 #ifdef DEBUG
     DEBUG_PRINT(">");
     for (uint8_t i = 0; i < lengthExBuffer + 8; i++)
