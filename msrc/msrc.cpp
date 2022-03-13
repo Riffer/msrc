@@ -258,6 +258,9 @@ void setup()
 #if RX_PROTOCOL == RX_HITEC
     hitec.begin();
 #endif
+#if RX_PROTOCOL == RX_FPORT
+    fport.begin();
+#endif
 }
 
 void loop()
@@ -288,6 +291,9 @@ void loop()
 #endif
 #if RX_PROTOCOL == RX_HITEC
     hitec.update();
+#endif
+#if RX_PROTOCOL == RX_FPORT
+    fport.updateFPort();
 #endif
     pwmOut.update();
 }

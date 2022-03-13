@@ -11,6 +11,7 @@
 #define RX_MULTIPLEX 6
 #define RX_JETIEX 7
 #define RX_HITEC 8
+#define RX_FPORT 9
 
 #define PROTOCOL_NONE 0
 #define PROTOCOL_HW_V3 1
