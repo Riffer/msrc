@@ -6,9 +6,9 @@
 
 /* Sensors */
 #define CONFIG_ESC_PROTOCOL PROTOCOL_NONE // PROTOCOL_NONE, PROTOCOL_HW_V3, PROTOCOL_HW_V4, PROTOCOL_PWM, PROTOCOL_CASTLE, PROTOCOL_KONTRONIK, PROTOCOL_APD_F, PROTOCOL_APD_HV
-#define CONFIG_GPS true
+#define CONFIG_GPS false
 #define GPS_BAUD_RATE 9600
-#define CONFIG_VOLTAGE1 false
+#define CONFIG_VOLTAGE1 true
 #define CONFIG_VOLTAGE2 false
 #define CONFIG_NTC1 false
 #define CONFIG_NTC2 false
@@ -73,7 +73,7 @@
    Connect arduino Rx to TTL Tx for flashing, then if applicabe connect arduino Rx to esc or gps
 */
 
-#define DEBUG
+//#define DEBUG
 //#define DEBUG_PACKET
 //#define DEBUG_SBUS_MS
 //#define DEBUG_EEPROM_WRITE
@@ -89,7 +89,7 @@
 //#define DEBUG_CASTLE
 //#define DEBUG_CASTLE_RX
 
-#define SIM_RX
+//#define SIM_RX
 #define SIM_SENSORS
 //#define SIM_LUA_SEND
 //#define SIM_LUA_RECEIVE
