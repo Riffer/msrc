@@ -77,7 +77,7 @@ Hitec hitec;
 #endif
 
 #if RX_PROTOCOL == RX_FPORT
-FPort fport(SRXL_IBUS_SERIAL);
+FPort fport(SMARTPORT_FRSKY_SBUS_SERIAL);
 #endif
 
 PwmOut pwmOut;

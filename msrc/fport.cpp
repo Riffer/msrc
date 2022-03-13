@@ -29,7 +29,10 @@ void FPort::updateFPort()
         if (!mute)
         {
             status = FPORT_SEND;
-            packetId++;
+            if (packetId == 0x00) packetId = 0x10;
+            else if (packetId == 0x10) packetId = 0x30;
+            else if (packetId == 0x30) packetId = 0x31;
+            else if (packetId == 0x31 || packetId == 0x32) packetId = 0x00;
         }
         mute = !mute;
         ts = millis();
@@ -125,6 +128,12 @@ void FPort::sendPacket(uint8_t packetId)
         serial_.write(0x81);
         sendData(packetId, spSensorP->dataId(), spSensorP->valueFormatted());
 #ifdef DEBUG
+        DEBUG_PRINT("8");
+        DEBUG_PRINT(" ");
+        DEBUG_PRINT("81");
+        DEBUG_PRINT(" ");
+        DEBUG_PRINT_HEX(packetId);
+        DEBUG_PRINT(" ");
         DEBUG_PRINT("D:");
         DEBUG_PRINT_HEX(spSensorP->dataId());
         DEBUG_PRINT(" V:");
