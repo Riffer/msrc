@@ -17,59 +17,59 @@ void Crsf::begin()
     setConfig(config);
 }
 
-void Crsf::sendU8(uint8_t value, uint8_t *buffer)
+uint8_t *Crsf::sendU8(uint8_t value, uint8_t *buffer)
 {
     *buffer = value;
+    return buffer + 1;
 }
 
-void Crsf::sendU16(uint16_t value, uint8_t *buffer)
+uint8_t *Crsf::sendU16(uint16_t value, uint8_t *buffer)
 {
-    memcpy(buffer, (uint8_t *)(__builtin_bswap16(value)), 2);
+    uint16_t swapped = __builtin_bswap16(value);
+    memcpy(buffer, &swapped, 2);
+    return buffer + 2;
 }
 
-void Crsf::sendS16(int16_t value, uint8_t *buffer)
+uint8_t *Crsf::sendS16(int16_t value, uint8_t *buffer)
 {
-    memcpy(buffer, (uint8_t *)(__builtin_bswap16(value)), 2);
+    int16_t swapped = __builtin_bswap16(value);
+    memcpy(buffer, &swapped, 2);
+    return buffer + 2;
 }
 
-void Crsf::sendU24(uint32_t value, uint8_t *buffer)
+uint8_t *Crsf::sendU24(uint32_t value, uint8_t *buffer)
 {
-    memcpy(buffer, (uint8_t *)(__builtin_bswap32(value << 8)), 3);
+    uint32_t swapped = __builtin_bswap32(value << 8);
+    memcpy(buffer, &swapped, 3);
+    return buffer + 3;
 }
 
-void Crsf::sendS32(int32_t value, uint8_t *buffer)
+uint8_t *Crsf::sendS32(int32_t value, uint8_t *buffer)
 {
-    memcpy(buffer, (uint8_t *)(__builtin_bswap32(value)), 4);
+    int32_t swapped = __builtin_bswap32(value);
+    memcpy(buffer, &swapped, 4);
+    return buffer + 4;
 }
 
 void Crsf::sendGps()
 {
     uint8_t buffer[CRSF_FRAME_LENGTH_NON_PAYLOAD + CRSF_FRAME_GPS_PAYLOAD_SIZE];
-    uint8_t pos = 0;
-    sendU8(CRSF_ADDRESS_GPS, buffer);
-    pos++;
-    sendU8(CRSF_FRAME_LENGTH_NON_PAYLOAD + CRSF_FRAME_GPS_PAYLOAD_SIZE, buffer + pos);
-    pos++;
-    sendU8(CRSF_FRAMETYPE_GPS, buffer + pos);
-    pos++;
-    sendS32(*csrfGps.latP * 10E7, buffer + pos);
-    pos += 4;
-    sendS32(*csrfGps.lonP * 10E7, buffer + pos);
-    pos += 4;
-    sendU16(*csrfGps.spdP * 1.852 * 10, buffer + pos);
-    pos += 2;
-    sendU16(*csrfGps.cogP * 100, buffer + pos);
-    pos += 2;
-    sendU16(*csrfGps.altP + 1000, buffer + pos);
-    pos += 2;
-    sendU8(*csrfGps.satP, buffer + pos);
-    pos++;
-    uint8_t crcValue = getCrc(buffer + 2, CRSF_FRAME_LENGTH_NON_PAYLOAD + CRSF_FRAME_GPS_PAYLOAD_SIZE - 2);
-    sendU8(crcValue, buffer + pos);
+    uint8_t *bufferP = &buffer[0];
+    bufferP = sendU8(CRSF_ADDRESS_GPS, bufferP);
+    bufferP = sendU8(CRSF_FRAME_LENGTH_NON_PAYLOAD + CRSF_FRAME_GPS_PAYLOAD_SIZE, bufferP);
+    bufferP = sendU8(CRSF_FRAMETYPE_GPS, bufferP);
+    bufferP = sendS32(*csrfGps.latP / 60 * 1E7, bufferP);
+    bufferP = sendS32(*csrfGps.lonP / 60 * 1E7, bufferP);
+    bufferP = sendU16(*csrfGps.spdP * 1.852 * 10, bufferP);
+    bufferP = sendU16(*csrfGps.cogP * 100, bufferP);
+    bufferP = sendU16(*csrfGps.altP + 1000, bufferP);
+    bufferP = sendU8(*csrfGps.satP, bufferP);
+    uint8_t crcValue = getCrc(buffer + 2, CRSF_FRAME_LENGTH_NON_PAYLOAD + CRSF_FRAME_GPS_PAYLOAD_SIZE - 3);
+    sendU8(crcValue, bufferP);
     serial_.writeBytes(buffer, CRSF_FRAME_LENGTH_NON_PAYLOAD + CRSF_FRAME_GPS_PAYLOAD_SIZE);
 #ifdef DEBUG
     DEBUG_PRINT(">");
-    for (uint8_t i = 0; i < CRSF_FRAME_LENGTH_NON_PAYLOAD + CRSF_FRAME_VARIO_SENSOR_PAYLOAD_SIZE; i++)
+    for (uint8_t i = 0; i < CRSF_FRAME_LENGTH_NON_PAYLOAD + CRSF_FRAME_GPS_PAYLOAD_SIZE; i++)
     {
         DEBUG_PRINT_HEX(buffer[i]);
         DEBUG_PRINT(" ");
@@ -81,27 +81,20 @@ void Crsf::sendGps()
 void Crsf::sendBattery()
 {
     uint8_t buffer[CRSF_FRAME_LENGTH_NON_PAYLOAD + CRSF_FRAME_BATTERY_SENSOR_PAYLOAD_SIZE];
-    uint8_t pos = 0;
-    sendU8(CRSF_ADDRESS_GPS, buffer + pos);
-    pos++;
-    sendU8(CRSF_FRAME_LENGTH_NON_PAYLOAD + CRSF_FRAME_BATTERY_SENSOR_PAYLOAD_SIZE, buffer + pos);
-    pos++;
-    sendU8(CRSF_FRAMETYPE_BATTERY_SENSOR, buffer + pos);
-    pos++;
-    sendU16(*csrfBattery.voltageP * 100, buffer + pos);
-    pos += 2;
-    sendU16(*csrfBattery.currentP * 100, buffer + pos);
-    pos += 2;
-    sendU24(*csrfBattery.consumptionP, buffer + pos);
-    pos += 3;
-    sendU8(0, buffer + pos);
-    pos++;
-    uint8_t crcValue = getCrc(buffer + 2, CRSF_FRAME_LENGTH_NON_PAYLOAD + CRSF_FRAME_GPS_PAYLOAD_SIZE - 2);
-    sendU8(crcValue, buffer + pos);
-    serial_.writeBytes(buffer, CRSF_FRAME_LENGTH_NON_PAYLOAD + CRSF_FRAME_GPS_PAYLOAD_SIZE);
+    uint8_t *bufferP = &buffer[0];
+    bufferP = sendU8(CRSF_ADDRESS_CURRENT_SENSOR, bufferP);
+    bufferP = sendU8(CRSF_FRAME_LENGTH_NON_PAYLOAD + CRSF_FRAME_BATTERY_SENSOR_PAYLOAD_SIZE, bufferP);
+    bufferP = sendU8(CRSF_FRAMETYPE_BATTERY_SENSOR, bufferP);
+    bufferP = sendU16(*csrfBattery.voltageP * 100, bufferP);
+    bufferP = sendU16(*csrfBattery.currentP * 100, bufferP);
+    bufferP = sendU24(*csrfBattery.consumptionP, bufferP);
+    bufferP = sendU8(0, bufferP);
+    uint8_t crcValue = getCrc(buffer + 2, CRSF_FRAME_LENGTH_NON_PAYLOAD + CRSF_FRAME_BATTERY_SENSOR_PAYLOAD_SIZE - 3);
+    sendU8(crcValue, bufferP);
+    serial_.writeBytes(buffer, CRSF_FRAME_LENGTH_NON_PAYLOAD + CRSF_FRAME_BATTERY_SENSOR_PAYLOAD_SIZE);
 #ifdef DEBUG
     DEBUG_PRINT(">");
-    for (uint8_t i = 0; i < CRSF_FRAME_LENGTH_NON_PAYLOAD + CRSF_FRAME_VARIO_SENSOR_PAYLOAD_SIZE; i++)
+    for (uint8_t i = 0; i < CRSF_FRAME_LENGTH_NON_PAYLOAD + CRSF_FRAME_BATTERY_SENSOR_PAYLOAD_SIZE; i++)
     {
         DEBUG_PRINT_HEX(buffer[i]);
         DEBUG_PRINT(" ");
@@ -112,20 +105,15 @@ void Crsf::sendBattery()
 
 void Crsf::sendVario()
 {
-
     uint8_t buffer[CRSF_FRAME_LENGTH_NON_PAYLOAD + CRSF_FRAME_VARIO_SENSOR_PAYLOAD_SIZE];
-    uint8_t pos = 0;
-    sendU8(CRSF_ADDRESS_GPS, buffer + pos);
-    pos++;
-    sendU8(CRSF_FRAME_LENGTH_NON_PAYLOAD + CRSF_FRAME_VARIO_SENSOR_PAYLOAD_SIZE, buffer + pos);
-    pos++;
-    sendU8(CRSF_FRAMETYPE_VARIO_SENSOR, buffer + pos);
-    pos++;
-    sendS16(*csrfVario.vSpdP * 10, buffer + pos);
-    pos += 2;
-    uint8_t crcValue = getCrc(buffer + 2, CRSF_FRAME_LENGTH_NON_PAYLOAD + CRSF_FRAME_GPS_PAYLOAD_SIZE - 2);
-    sendU8(crcValue, buffer + pos);
-    serial_.writeBytes(buffer, CRSF_FRAME_LENGTH_NON_PAYLOAD + CRSF_FRAME_GPS_PAYLOAD_SIZE);
+    uint8_t *bufferP = &buffer[0];
+    bufferP = sendU8(CRSF_ADDRESS_VARIO, bufferP);
+    bufferP = sendU8(CRSF_FRAME_LENGTH_NON_PAYLOAD + CRSF_FRAME_VARIO_SENSOR_PAYLOAD_SIZE, bufferP);
+    bufferP = sendU8(CRSF_FRAMETYPE_VARIO_SENSOR, bufferP);
+    bufferP = sendS16(*csrfVario.vSpdP * 10, bufferP);
+    uint8_t crcValue = getCrc(buffer + 2, CRSF_FRAME_LENGTH_NON_PAYLOAD + CRSF_FRAME_VARIO_SENSOR_PAYLOAD_SIZE - 3);
+    sendU8(crcValue, bufferP);
+    serial_.writeBytes(buffer, CRSF_FRAME_LENGTH_NON_PAYLOAD + CRSF_FRAME_VARIO_SENSOR_PAYLOAD_SIZE);
 #ifdef DEBUG
     DEBUG_PRINT(">");
     for (uint8_t i = 0; i < CRSF_FRAME_LENGTH_NON_PAYLOAD + CRSF_FRAME_VARIO_SENSOR_PAYLOAD_SIZE; i++)
@@ -153,13 +141,11 @@ void Crsf::sendPacket()
 
 void Crsf::update()
 {
-
     uint8_t status = CRSF_WAIT;
     static bool mute = true;
-
 #if defined(SIM_RX)
     static uint16_t ts = 0;
-    if ((uint16_t)(millis() - ts) > 100)
+    if ((uint16_t)(millis() - ts) > 500)
     {
         if (!mute)
         {
@@ -195,7 +181,7 @@ void Crsf::update()
     }
     if (status == CRSF_SEND)
     {
-        if (serial_.timestamp() < 1500)
+        if (1) //(serial_.timestamp() < 1500)
             sendPacket();
 #ifdef DEBUG
         else
@@ -205,14 +191,15 @@ void Crsf::update()
         }
 #endif
     }
+    
 
     static uint8_t sensorCont = 0;
     if (isGpsEnabled && sensorCont % 3 == 0)
         csrfGps.deviceP->update();
     if (isBatteryEnabled && sensorCont % 3 == 1)
     {
-        csrfBattery.deviceVoltageP->update();
-        csrfBattery.deviceCurrentP->update();
+        if (csrfBattery.deviceVoltageP) csrfBattery.deviceVoltageP->update();
+        if (csrfBattery.deviceCurrentP) csrfBattery.deviceCurrentP->update();
     }
     if (isVarioEnabled && sensorCont % 3 == 2)
         csrfVario.deviceP->update();
@@ -291,6 +278,7 @@ void Crsf::setConfig(Config &config)
         csrfGps.lonP = gps->lonP();
         csrfGps.spdP = gps->spdP();
         csrfGps.cogP = gps->cogP();
+        csrfGps.altP = gps->altP();
         csrfGps.satP = gps->satP();
         isGpsEnabled = true;
         csrfVario.deviceP = gps;

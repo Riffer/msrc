@@ -93,11 +93,11 @@ private:
     void sendGps();
     void sendBattery();
     void sendVario();
-    void sendU8(uint8_t value, uint8_t *buffer);
-    void sendU16(uint16_t value, uint8_t *buffer);
-    void sendS16(int16_t value, uint8_t *buffer);
-    void sendU24(uint32_t value, uint8_t *buffer);
-    void sendS32(int32_t value, uint8_t *buffer);
+    uint8_t *sendU8(uint8_t value, uint8_t *buffer);
+    uint8_t *sendU16(uint16_t value, uint8_t *buffer);
+    uint8_t *sendS16(int16_t value, uint8_t *buffer);
+    uint8_t *sendU24(uint32_t value, uint8_t *buffer);
+    uint8_t *sendS32(int32_t value, uint8_t *buffer);
     uint8_t getCrc(uint8_t *buffer, uint8_t size);
     uint8_t update_crc(uint8_t crc, uint8_t crc_seed);
 

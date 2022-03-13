@@ -1,4 +1,4 @@
-# MSRC - Multi Sensor for RC - Smartport, Frsky D, XBUS, SRXL, IBUS, SBUS2, Multiplex Sensor Bus, Jeti Ex Bus, Hitec
+# MSRC - Multi Sensor for RC - Smartport, Frsky D, XBUS, SRXL, IBUS, SBUS2, Multiplex Sensor Bus (M-Link), Jeti Ex Bus, Hitec
 
 
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/donate/?business=9GKNBVGHKXFGW&no_recurring=0&currency_code=USD)
@@ -92,7 +92,7 @@ The following Rx protocols are supported:
 - Spektrum XBUS: I2C
 - Flysky IBUS: serial, 115200 bps
 - Futaba SBUS2: inverted serial, 100000 bps
-- Multiplex Sensor Bus: serial, 38400 bps
+- Multiplex Sensor Bus (M-Link): serial, 38400 bps
 - Jeti Ex Bus: serial 125000, 250000 bps
 - Hitec: I2C
 
