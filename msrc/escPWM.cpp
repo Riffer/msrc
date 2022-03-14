@@ -31,11 +31,11 @@ void EscPWM::TIMER1_CAPT_handler()
 void EscPWM::TIMER1_COMPB_handler()
 {
     cycles_++;
-    if (cycles_ > ESCPWM_MAX_CYCLES)
+    if (cycles_ == ESCPWM_MAX_CYCLES)
     {
         escPwmRunning = false;
         escPwmDuration = 0xFFFFFFFF;
-        TIMSK1 ^= _BV(OCIE1B); // DISABLE TIMER1 OCRA INTERRUPT
+        TIMSK1 ^= _BV(OCIE1B); // DISABLE TIMER1 OCRB INTERRUPT
 #ifdef DEBUG_PWM
         DEBUG_PRINT("X");
         DEBUG_PRINTLN();
@@ -68,11 +68,11 @@ void EscPWM::TIMER4_CAPT_handler()
 void EscPWM::TIMER4_COMPB_handler()
 {
     cycles_++;
-    if (cycles_ > ESCPWM_MAX_CYCLES)
+    if (cycles_ == ESCPWM_MAX_CYCLES)
     {
         escPwmRunning = false;
         escPwmDuration = 0xFFFFFFFF;
-        TIMSK4 ^= _BV(OCIE4B); // DISABLE TIMER4 OCRA INTERRUPT
+        TIMSK4 ^= _BV(OCIE4B); // DISABLE TIMER4 OCRB INTERRUPT
 #ifdef DEBUG_PWM
         DEBUG_PRINT("X");
         DEBUG_PRINTLN();
@@ -104,10 +104,10 @@ void EscPWM::FTM0_IRQ_handler()
         DEBUG_PRINTLN();
 #endif
     }
-    if (FTM0_C0SC & FTM_CSC_CHF) // TIMER CAPTURE INTERRUPT CH4
+    if (FTM0_C0SC & FTM_CSC_CHF) // TIMER CAPTURE INTERRUPT CH0
     {
         cycles_++;
-        if (cycles_ > ESCPWM_MAX_CYCLES)
+        if (cycles_ == ESCPWM_MAX_CYCLES)
         {
             escPwmRunning = false;
             escPwmDuration = 0xFFFFFFFF;
@@ -146,18 +146,14 @@ void EscPWM::begin()
 
 #if defined(__MKL26Z64__) || defined(__MK20DX128__) || defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__)
     FTM0_IRQ_handlerP = FTM0_IRQ_handler;
-    FTM0_SC = 0;          // DISABLE TIMER
-    delayMicroseconds(1); //
+    FTM0_SC = 0;
     FTM0_CNT = 0;
-    SIM_SCGC6 |= SIM_SCGC6_FTM0; // ENABLE CLOCK
     FTM0_MOD = 0xFFFF;
-    FTM0_SC = FTM_SC_PS(7);    // PRESCALER 128
-    FTM0_SC |= FTM_SC_CLKS(1); // ENABLE COUNTER
+    FTM0_SC = FTM_SC_PS(7) | FTM_SC_CLKS(1);    // PRESCALER 128 | ENABLE COUNTER
 
-    FTM0_C4SC = 0;                              // DISABLE CHANNEL
-    delayMicroseconds(1);                       //
-    FTM0_C4SC = FTM_CSC_ELSA;                   // CAPTURE RISING CH4
-    FTM0_C4SC |= FTM_CSC_CHIE;                  // ENABLE INTERRUPT CH4
+    FTM0_C4SC = 0;
+    delayMicroseconds(1);
+    FTM0_C4SC = FTM_CSC_ELSA | FTM_CSC_CHIE;    // CAPTURE RISING CH4 | ENABLE INTERRUPT CH4
     PORTD_PCR4 = PORT_PCR_MUX(4) | PORT_PCR_PE; // TPM0_CH4 MUX 4 -> PTD4 -> 6
 
     FTM0_C0SC = 0;           // DISABLE CHANNEL
