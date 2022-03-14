@@ -10,6 +10,7 @@ FPort::~FPort()
 
 void FPort::begin()
 {
+    //serial_.begin(115200, SERIAL__8N1 | SERIAL__HALF_DUP);
     serial_.begin(115200, SERIAL__8N1_RXINV_TXINV | SERIAL__HALF_DUP);
     serial_.setTimeout(FPORT_TIMEOUT);
     pinMode(LED_BUILTIN, OUTPUT);
@@ -50,14 +51,13 @@ void FPort::updateFPort()
         {
             DEBUG_PRINT_HEX(buff[i]);
             DEBUG_PRINT(" ");
-            delayMicroseconds(100);
         }
         DEBUG_PRINTLN();
 #endif
         uint8_t packet[FPORT_PACKET_LENGHT];
-        if (buff[0] == 0x7E && buff[2] == 0x00 && length - buff[1] == FPORT_PACKET_LENGHT)
+        if (buff[0] == 0x7E && buff[2] == 0x00 && (length - buff[1] - 4) == FPORT_PACKET_LENGHT)
         {
-            memcpy(packet, buff + buff[1], FPORT_PACKET_LENGHT);
+            memcpy(packet, buff + buff[1] + 4, FPORT_PACKET_LENGHT);
 #ifdef DEBUG_PACKET
             DEBUG_PRINT("P:");
             for (uint8_t i = 0; i < FPORT_PACKET_LENGHT; i++)
@@ -68,17 +68,13 @@ void FPort::updateFPort()
             DEBUG_PRINTLN();
 #endif
         }
-        else if (length == FPORT_PACKET_LENGHT)
-        {
-            memcpy(packet, buff, FPORT_PACKET_LENGHT);
-        }
         else
         {
             return;
         }
         //if (crc(packet, FPORT_PACKET_LENGHT) == 0)
         {
-            if (packet[0] == 0x3D && packet[1] == 0x01 && packet[4] == 0x3A)
+            if (packet[0] == 0x7E && packet[1] == 0x8 && packet[11] == 0x7E)
             {
                 if (!mute)
                 {

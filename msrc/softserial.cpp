@@ -296,7 +296,7 @@ void SoftSerial::begin(uint32_t baud, uint8_t format)
     uint16_t delay = (F_CPU / baud) / 4;
     // substract overheads
     tx_delay_start = subs(delay, 14 / 4);
-    tx_delay = subs(delay, 19 / 4);
+    tx_delay = subs(delay, 18 / 4);
     tx_delay_parity = subs(delay, 14 / 4);
     tx_delay_stop = subs(delay * stop_bits_, (71 + 10) / 4);
     rx_delay = subs(delay, 15 / 4);
