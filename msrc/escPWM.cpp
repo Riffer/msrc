@@ -84,16 +84,16 @@ void EscPWM::TIMER4_COMPB_handler()
 #if defined(__MKL26Z64__) || defined(__MK20DX128__) || defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__)
 void EscPWM::FTM0_IRQ_handler()
 {
-    if (FTM0_C4SC & FTM_CSC_CHF) // TIMER CAPTURE INTERRUPT CH4
+    if (FTM0_C4SC & FTM_CSC_CHF) // TIMER INTERRUPT CH4
     {
         static uint16_t ts = 0;
         if (escPwmRunning)
             escPwmDuration = (uint16_t)(FTM0_CNT - ts) + (cycles_ * 65536UL);
         ts = FTM0_CNT;
-        FTM0_C4SC |= FTM_CSC_CHF; // CLEAR FLAG
+        FTM0_C4SC |= FTM_CSC_CHF;
         FTM0_C0V = FTM0_CNT;
-        FTM0_C0SC |= FTM_CSC_CHF;  // CLEAR FLAG
-        FTM0_C0SC |= FTM_CSC_CHIE; // ENABLE CH0 INTERRUPT
+        FTM0_C0SC |= FTM_CSC_CHF;
+        FTM0_C0SC |= FTM_CSC_CHIE;
         escPwmUpdate = true;
         escPwmRunning = true;
         cycles_ = 0;
@@ -104,15 +104,15 @@ void EscPWM::FTM0_IRQ_handler()
         DEBUG_PRINTLN();
 #endif
     }
-    if (FTM0_C0SC & FTM_CSC_CHF) // TIMER CAPTURE INTERRUPT CH0
+    if (FTM0_C0SC & FTM_CSC_CHF) // TIMER INTERRUPT CH0
     {
         cycles_++;
         if (cycles_ == ESCPWM_MAX_CYCLES)
         {
             escPwmRunning = false;
             escPwmDuration = 0xFFFFFFFF;
-            FTM0_C0SC &= ~FTM_CSC_CHIE; // DISABLE INTERRUPT
-            FTM0_C0SC |= FTM_CSC_CHF;   // CLEAR FLAG
+            FTM0_C0SC &= ~FTM_CSC_CHIE;
+            FTM0_C0SC |= FTM_CSC_CHF;
 #ifdef DEBUG_PWM
             DEBUG_PRINT("X");
             DEBUG_PRINTLN();
@@ -144,20 +144,40 @@ void EscPWM::begin()
     TIMSK4 = _BV(ICIE4) | _BV(TOIE4);
 #endif
 
-#if defined(__MKL26Z64__) || defined(__MK20DX128__) || defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__)
+#if defined(__MKL26Z64__)
     FTM0_IRQ_handlerP = FTM0_IRQ_handler;
     FTM0_SC = 0;
     FTM0_CNT = 0;
     FTM0_MOD = 0xFFFF;
-    FTM0_SC = FTM_SC_PS(7) | FTM_SC_CLKS(1);    // PRESCALER 128 | ENABLE COUNTER
+    FTM0_SC = FTM_SC_PS(5) | FTM_SC_CLKS(1);    // PRESCALER 32 | ENABLE COUNTER
 
     FTM0_C4SC = 0;
     delayMicroseconds(1);
-    FTM0_C4SC = FTM_CSC_ELSA | FTM_CSC_CHIE;    // CAPTURE RISING CH4 | ENABLE INTERRUPT CH4
+    FTM0_C4SC = FTM_CSC_ELSA | FTM_CSC_CHIE;    // CAPTURE RISING | ENABLE INTERRUPT
     PORTD_PCR4 = PORT_PCR_MUX(4) | PORT_PCR_PE; // TPM0_CH4 MUX 4 -> PTD4 -> 6
 
-    FTM0_C0SC = 0;           // DISABLE CHANNEL
-    delayMicroseconds(1);    //
+    FTM0_C0SC = 0;
+    delayMicroseconds(1);
+    FTM0_C0SC = FTM_CSC_MSA; // SOFTWARE CH0
+
+    NVIC_ENABLE_IRQ(IRQ_FTM0);
+
+#endif
+
+#if defined(__MK20DX128__) || defined(__MK20DX256__) || defined(__MK64FX512__) || defined(__MK66FX1M0__)
+    FTM0_IRQ_handlerP = FTM0_IRQ_handler;
+    FTM0_SC = 0;
+    FTM0_CNT = 0;
+    FTM0_MOD = 0xFFFF;
+    FTM0_MODE = FTM_MODE_WPDIS;  // UNPROTECT COMBINE
+    FTM0_MODE |= FTM_MODE_FTMEN;
+    FTM0_SC = FTM_SC_PS(5) | FTM_SC_CLKS(1); // PRESCALER 32 | ENABLE COUNTER
+
+    FTM0_C4SC = FTM_CSC_ELSA | FTM_CSC_MSA | FTM_CSC_CHIE; // CAPTURE RISING | ENABLE INTERRUPT
+    FTM0_COMBINE = FTM_COMBINE_DECAPEN2;
+    FTM0_COMBINE |= FTM_COMBINE_DECAP2;
+    PORTD_PCR4 = PORT_PCR_MUX(4) | PORT_PCR_PE; // FTM0_CH4 MUX 4 -> PTD4 -> 6
+
     FTM0_C0SC = FTM_CSC_MSA; // SOFTWARE CH0
 
     NVIC_ENABLE_IRQ(IRQ_FTM0);
