@@ -373,9 +373,8 @@ void EscCastle::FTM1_IRQ_handler()
 {
     if (FTM1_C0SC & FTM_CSC_CHF) // TIMER INPUT CAPTURE INTERRUPT RX
     {
-        if (FTM1_C0V > 100 && FTM1_C0V < 5000)
+        if (FTM1_C0V < 5000)
         {
-            FTM0_C0SC |= FTM_CSC_CHF;
             FTM0_C0SC |= FTM_CSC_CHIE;
             FTM0_C0V = FTM1_C0V;
 #ifdef DEBUG_CASTLE_RX
@@ -387,6 +386,8 @@ void EscCastle::FTM1_IRQ_handler()
 #endif
         }
         FTM1_CNT = 0;
+        FTM1_C0SC ^= FTM_CSC_ELSA;
+        FTM1_C0SC ^= FTM_CSC_ELSB;
         FTM1_C0SC |= FTM_CSC_CHF; // CLEAR FLAG
     }
     else if (FTM1_SC & FTM_SC_TOF) // TIMER OVERFLOW INTERRUPT
