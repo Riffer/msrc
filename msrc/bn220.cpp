@@ -78,6 +78,7 @@ void Bn220::update()
     time_ = 162302; // hhmmss
     hdop_ = 12.35; //
     vario_ = 5.67; // m/s
+    dist_ = 1234; // m
 #else
     vario_ = calcSpeed(alt_, 2000);
     dist_ = calcDistanceToHome(lat_ / 60, lon_ / 60, alt_, 1000);
