@@ -468,7 +468,7 @@ void EscCastle::FTM1_IRQ_handler()
         FTM0_C0SC |= FTM_CSC_CHIE;
         FTM0_C0V = FTM1_C1V - FTM1_C0V;
         //FTM1_CNT = 0;
-#ifdef DEBUG_CASTLE_RX
+#ifdef DEBUG_CASTLE_RX2
         //if (FTM1_C0V < 1500 || FTM1_C0V > 1600)
         {
             DEBUG_PRINT(FTM0_C0V);
@@ -496,7 +496,11 @@ void EscCastle::FTM0_IRQ_handler()
     if (FTM0_C0SC & FTM_CSC_CHF) // CH0 INTERRUPT (DISABLE CH0 PWM OUT)
     {
         PORTC_PCR1 = PORT_PCR_MUX(1); // PTC1 MUX 1 -> INPUT
-        DEBUG_PRINT("-");
+        DEBUG_PRINT("1:");
+        DEBUG_PRINT(micros());
+        DEBUG_PRINT(" ");
+        DEBUG_PRINT(FTM0_CNT);
+        DEBUG_PRINT(" ");
         //FTM0_C4SC |= FTM_CSC_CHF;     // CLEAR FLAG CH4
         //FTM0_C4SC |= FTM_CSC_CHIE;    // ENABLE INTERRUPT CH4
         FTM0_C2SC |= FTM_CSC_CHF;     // CLEAR FLAG CH2
@@ -538,7 +542,11 @@ void EscCastle::FTM0_IRQ_handler()
     if (FTM0_C2SC & FTM_CSC_CHF) // CH2 INTERRUPT (TOGGLE CH0 TO OUTPUT)
     {
         PORTC_PCR1 = PORT_PCR_MUX(4); // FTM0_CH0 MUX 4 -> PTD0 -> 2(PWM OUT)
-        DEBUG_PRINT("+");
+        DEBUG_PRINT("2:");
+        DEBUG_PRINT(micros());
+        DEBUG_PRINT(" ");
+        DEBUG_PRINT(FTM0_CNT);
+        DEBUG_PRINTLN();
         //FTM0_C4SC &= ~FTM_CSC_CHIE;   // DISABLE INTERRUPT CH4
         FTM0_C2SC &= ~FTM_CSC_CHIE;   // DISABLE INTERRUPT CH2
         FTM0_C2SC |= FTM_CSC_CHF;     // CLEAR FLAG CH2
