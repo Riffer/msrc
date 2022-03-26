@@ -399,7 +399,7 @@ void Ibus::setConfig(Config &config)
         sensorIbusP = new SensorIbus(AFHDS2A_ID_TEMPERATURE, IBUS_TYPE_U16, ntc->valueP(), ntc);
         addSensor(sensorIbusP);
     }
-    if (config.deviceI2C1Type == I2C_BMP280)
+    if (CONFIG_I2C1_TYPE == I2C_BMP280)
     {
         SensorIbus *sensorIbusP;
         Bmp280 *bmp;

@@ -303,10 +303,9 @@ void EscCastle::TIMER3_CAPT_handler() // RX INPUT
             TIMSK3 |= _BV(TOIE3);  // ENABLE OVERFLOW INTERRUPT
         }
         OCR1B = ICR3 - ts;
-        castlePwmRx = OCR1B; // KEEP PWM STATE FOR TELEMETRY PULSE LENGHT
         TCNT3 = 0;           // RESET COUNTER
 #ifdef DEBUG_CASTLE_RX
-        DEBUG_PRINT(castlePwmRx);
+        DEBUG_PRINT(ICR3 - ts);
         DEBUG_PRINTLN();
 #endif
     }
@@ -332,6 +331,7 @@ void EscCastle::TIMER1_COMPB_handler() // START INPUT STATE
     PORTB |= _BV(PB6);                  // PD2 PULLUP
     TIFR1 |= _BV(OCF1C) | _BV(ICF1);    // CLEAR ICP1 CAPTURE/OC1C FLAG
     TIMSK1 |= _BV(OCIE1C) | _BV(ICIE1); // ENABLE ICP1 CAPT/OC1C MATCH
+    castlePwmRx = OCR1B;
 }
 
 void EscCastle::TIMER1_CAPT_handler() // READ TELEMETRY
@@ -646,12 +646,12 @@ void EscCastle::begin()
     TIMER1_CAPT_handlerP = TIMER1_CAPT_handler;
 
     // TIMER3. RX INPUT. ICP3 (PC7,13)
-    PORTC |= _BV(PC7);    // ICP3 PULLUP
+    //PORTC |= _BV(PC7);    // ICP3 PULLUP
     TCCR3A = 0;           //
     TCCR3B = 0;           // MODE 0 (NORMAL)
     TCCR3B |= _BV(ICES3); // RISING EDGE
     TCCR3B |= _BV(CS31);  // SCALER 8
-    TIMSK3 = _BV(ICIE3);  // CAPTURE INTERRUPT
+    TIMSK3 |= _BV(ICIE3);  // CAPTURE INTERRUPT
 
     // TIMER1. ESC: PWM OUTPUT, TELEMETRY INPUT. ICP1 (PD4,4). OC1B (PB6,10) -> OUTPUT/INPUT PULL UP
     TCCR1A = _BV(WGM11) | _BV(WGM10);    // MODE 15 (TOP OCR1A)
@@ -666,7 +666,10 @@ void EscCastle::begin()
 
 #if defined(__MKL26Z64__)
 
-    // FTM1 (2 CH): CAPTURE RX PULSE (PIN: CH0 -> PTB0 -> 16/A2)
+    SIM_SCGC6 |= SIM_SCGC6_TPM0 | SIM_SCGC6_TPM1;
+    SIM_SCGC5 |= SIM_SCGC5_PORTB | SIM_SCGC5_PORTD;
+
+    // FTM1 (2 CH): CAPTURE RX PULSE (PIN: CH0 -> PTE20 -> 24/A10)
     FTM1_IRQ_handlerP = FTM1_IRQ_handler;
     FTM1_SC = 0;
     FTM1_CNT = 0;
@@ -675,7 +678,8 @@ void EscCastle::begin()
     FTM1_C0SC = 0;
     delayMicroseconds(1);
     FTM1_C0SC = FTM_CSC_ELSA | FTM_CSC_CHIE; // CAPTURE RISING
-    PORTB_PCR0 = PORT_PCR_PE | PORT_PCR_PS | PORT_PCR_MUX(3); // TPM1_CH0 MUX 3 -> PTB0 -> 16/A2 (CAPTURE INPUT RX)
+    //PORTB_PCR0 = PORT_PCR_PE | PORT_PCR_PS | PORT_PCR_MUX(3); // TPM1_CH0 MUX 3 -> PTE20 -> 16/A2 (CAPTURE INPUT RX)
+    PORTE_PCR20 = PORT_PCR_PE | PORT_PCR_PS | PORT_PCR_MUX(3); // TPM1_CH0 MUX 3 -> PTE20 -> 24/A10 (CAPTURE INPUT RX)
     NVIC_ENABLE_IRQ(IRQ_FTM1);
 
     // FTM0 (6 CH): INVERTED PWM AT 20MHZ AND CAPTURE TELEMETRY (PINS: CH0 PWM OUTPUT (PTD0 -> 2), CH4 MUX 4 CAPTURE INPUT (PTD4 -> 6))
