@@ -66,7 +66,7 @@
 #endif
 #define ESC_SERIAL hardSerial0
 #define GPS_SERIAL hardSerial0
-#define DEBUG_SERIAL hardSerial0
+#define DEBUG_SERIAL softSerial
 #endif
 
 // ATmega328PB
