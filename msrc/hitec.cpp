@@ -1,6 +1,7 @@
 #include "hitec.h"
 
-volatile bool Hitec::isEnabledFrame[11] = {0};
+//volatile bool Hitec::isEnabledFrame[11] = {0};
+volatile bool Hitec::isEnabledFrame[11] = {1,1,1,1,1,1,1,1,0,0,0};
 bool Hitec::isEmpty = true;
 float *Hitec::frame_0x11_P[1] = {NULL};
 float *Hitec::frame_0x12_P[2] = {NULL};
@@ -42,7 +43,7 @@ void Hitec::i2c_request_handler()
         do
         {
             frame++;
-            frame %= 11;
+            frame %= 8;
         } while (!isEnabledFrame[frame]);
         buffer[0] = frame + 0x11;
         buffer[6] = frame + 0x11;
