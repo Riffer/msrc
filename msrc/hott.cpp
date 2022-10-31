@@ -19,7 +19,7 @@ void Hott::begin()
 
 void Hott::writeCrc(uint8_t value)
 {
-    //serial_.write(value);
+    serial_.write(value);
 #ifdef DEBUG
     DEBUG_PRINT_HEX(value);
 #endif
@@ -28,7 +28,7 @@ void Hott::writeCrc(uint8_t value)
 void Hott::write8(uint8_t value, uint8_t &crc)
 {
     crc += value;
-    //serial_.write(value);
+    serial_.write(value);
 #ifdef DEBUG
     DEBUG_PRINT_HEX(value);
     DEBUG_PRINT(" ");
